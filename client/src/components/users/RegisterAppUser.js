@@ -5,34 +5,40 @@ import {Card, Col, Container, Row, Form, Button, Dropdown} from "react-bootstrap
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Select from 'react-select';
-
+import FileBase64 from 'react-file-base64';
 function RegisterAppUser() {
-    const [ user, setUser] = useState({
-      name: "",
-      email:"",
-      password:"",
-      username: "",
-      role: "",
-      photo: ""
-  })
-  const handleChange = e => {
-    const { name, value } = e.target
-    setUser({
-        ...user,
-        [name]: value
-    })
+    const [ user, setUser] = useState('')
+    const [ file, setFiles] = useState('')
+    const [ preview, setPreview] = useState('')
+    
+//   const handleChange = e => {
+//     const { name, value } = e.target
+//     setUser({
+//         ...user,
+//         [name]: value
+//     })
+// }
+const uploadHandler = (event) => {
+  const selectedFile=event.target.files[0]
+  setFiles(selectedFile) 
+  const filePreview=URL.createObjectURL(selectedFile);
+  console.log(filePreview);
+  setPreview(filePreview);
+
 }
 
 const clearState = () => {
   setUser('')
+  setPreview('');
 }
 const register = (event) => {
   event.preventDefault();
+
   let registerForm=document.getElementById('registerForm');  
   const { name, username, email, password, role, photo} = user
-  if(name==''){
+  if(user.name==''){
     toast.error('Name Required');
-  }else if(username==''){
+  }else if(user.username==''){
     toast.error('Username Required');
   }else if(email==''){
     toast.error('Email Required');
@@ -41,8 +47,20 @@ const register = (event) => {
   }else if(role==''){
     toast.error('Role Required');
   }else{  
-  
-      axios.post("CreateAppUser", user)
+   const formData= new FormData();
+   formData.append('name',name);
+   formData.append('username',username);
+   formData.append('email',email);
+   formData.append('password',password);
+   formData.append('role',role);
+   formData.append('photo',file.name);   
+  formData.append('myfile',file);
+  console.log(formData);
+      axios.post("CreateAppUser", formData, {
+        headers: {
+          "encType": "multipart/form-data"
+        }
+      })
       .then( res => {
           console.log(res.data)
           if (res.data.status === 'success') {   
@@ -55,71 +73,8 @@ const register = (event) => {
             
           }
       })
-  
     }
-}
-// const [role, setRole] = useState([])
-
-// function Reset(){
-//   setName("");
-//   setUsername("");
-//   setEmail("");
-//   setRole("");
-//   setPassword("");
-// }
-// const options = [
-//   { value: '', label: 'Choose' },
-//   { value: 'Admin', label: 'Admin' },
-//   { value: 'HRM', label: 'HRM' },
-//   { value: 'Accounts', label: 'Accounts' }
-// ]
-
-
-// function onChangeInput(value) {  
-//   setRole(value.value)
-// //  console.log(value); 
-// }
-// console.log(role);
-
-
-//     async function registerUser(event) {
-// 		event.preventDefault();
-//     let registerBtn=document.getElementById('registerBtn');    
-//     if(name.length==0){
-//       toast.error('Name Required');
-//     }else if(username.length==0){
-//       toast.error('Username Required');
-//     }else{
-//     registerBtn.innerHTML="Registering....";   
-// 		const response = await fetch('http://localhost:5000/api/v1/CreateAppUser', {
-// 			method: 'POST',
-//  			headers: {
-// 				'Content-Type': 'application/json',
-//         'token-key': `${JSON.parse(localStorage.getItem('token'))}`},
-//         body: JSON.stringify({
-// 				name,
-//         username,
-// 				email,
-//         role,
-// 				password,
-// 			}),
-// 		})
-
-// 		const data = await response.json();
-
-// 		if (data.status === 'success') {   
-//       toast.success('App User Successfully Created!');      
-//       registerBtn.innerHTML="Register";
-//       Reset();
-// 			// history.push('login')
-// 		}else{
-//       toast.error('Already registered! Try another');
-//       registerBtn.innerHTML="Register";   
-      
-//     }
-// 	}
-// }
-
+  }
   return (
   <div>
   <div className="content-wrapper">
@@ -150,19 +105,20 @@ const register = (event) => {
               </div>
          
                 <div className="card-body">
-                <Form id="registerForm" onSubmit={register} encType="multipart/form-data">
+                <Form id="registerForm" onSubmit={register}>
                 <div className="row">
                 <div className="col-md-6">
                   <div className="form-group">
                     <label htmlFor="exampleInputEmail1">Full Name {user.name}</label>                 
-                     <input className="form-control" name="name" value={user.name} placeholder="Your Name" onChange={ handleChange }></input>
+                     <input type="text" className="form-control" onChange={e => setUser({ ...user, name: e.target.value })} placeholder="Your Name" />
                   </div>
                   </div> 
                   <div className="col-md-6">
                   <div className="form-group">
                     <label htmlFor="exampleInputPassword1">Username {user.username}</label>
-                    
-                      <input className="form-control" name="username" value={user.username} placeholder="Username" onChange={ handleChange }></input>
+
+                    <input type="text" className="form-control" onChange={e => setUser({ ...user, username: e.target.value })} placeholder="Username" />
+
                   </div>
                   </div>
                  
@@ -171,14 +127,15 @@ const register = (event) => {
                 <div className="col-md-6">
                   <div className="form-group">
                     <label htmlFor="exampleInputEmail1">Email</label>
-                    <input className="form-control" name="email" value={user.email} placeholder="Email" onChange={ handleChange }/>
+                    <input  type="email" className="form-control" onChange={e => setUser({ ...user, email: e.target.value })} placeholder="Email" />
+
                   
                   </div>
                   </div> 
                   <div className="col-md-6">
                   <div className="form-group">
-                    <label htmlFor="exampleInputPassword1">Password</label>                   
-                      <input type="password" className="form-control" name="password" value={user.password} placeholder="Your Password" onChange={ handleChange }></input>
+                    <label htmlFor="exampleInputPassword1">Password</label>   
+                    <input type="password" className="form-control" onChange={e => setUser({ ...user, password: e.target.value })} />                
                   </div>
                   </div>
                  
@@ -188,7 +145,7 @@ const register = (event) => {
                 <div className="form-group">
   <label>Role {user.role}</label>
 
-  <select className="form-control" style={{width: '100%'}} name="role" value={user.role} onChange={ handleChange }>
+  <select className="form-control" style={{width: '100%'}} onChange={e => setUser({ ...user, role: e.target.value })}>
     <option selected="">Choose</option>
     <option value="Admin">Admin</option>
     <option value="Accounts">Accounts</option>
@@ -202,14 +159,22 @@ const register = (event) => {
                     <label htmlFor="exampleInputFile">Photo {user.photo}</label>
                     <div className="input-group">
                       <div className="custom-file">
-                        <input type="file" name="photo" value={user.photo} className="custom-file-input" id="exampleInputFile" accept="image/png, image/jpeg, image/jpg"  multiple="false" onChange={ handleChange } />
-                        <label className="custom-file-label" htmlFor="exampleInputFile">Choose Photo</label>
+                      {/* <FileBase64 type="file"
+          multiple={false}
+          onDone={({ base64 }) => setUser({ ...user, photo: base64 })}
+        />
+                         */}
+                      <input type="file" onChange={uploadHandler} />
                       </div>
                       <div className="input-group-append">
                         <span className="input-group-text">Upload</span>
                       </div>
                     </div>
                   </div>
+                  <div className="card-image waves-effect waves-block waves-light">
+                  {file && <img src={preview} alt={file.name} />}
+            {/* <img className="activator" style={{ width: '30%', height: 100 }} src={user.photo} /> */}
+          </div>
                   </div>
                                   
                   </div>
